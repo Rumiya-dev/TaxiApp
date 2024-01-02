@@ -24,6 +24,7 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.example.ubergoogle.databinding.ActivityDriverMapBinding;
 import com.google.firebase.Firebase;
@@ -78,29 +79,38 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
         getAssignedCustomer();
     }
 
-/*служит для получения и отслеживания информации о клиенте, привязанном к текущему водителю.*/
+    /*служит для получения и отслеживания информации о клиенте, привязанном к текущему водителю.*/
     private void getAssignedCustomer(){//Обнаружение назначенного клиента:
 
         /*Получаем уникальный идентификатор текущего пользователя (водителя) из Firebase Authentication.*/
         String driverId = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
-/* Создаем ссылку на узел в базе данных Firebase, который содержит информацию о водителе. В данном случае, предполагается, что узел находится по пути "Users/Drivers/{driverId}".*/
+        /* Создаем ссылку на узел в базе данных Firebase, который содержит информацию о водителе. В данном случае, предполагается, что узел находится по пути "Users/Drivers/{driverId}".*/
         DatabaseReference assignedCustomerRef = FirebaseDatabase.getInstance().getReference().child("Users").child("Drivers").child(driverId).child("customerRideId");
 
-/* Добавляем слушатель значений к assignedCustomerRef, чтобы отслеживать изменения в данных в реальном времени.*/
+        /* Добавляем слушатель значений к assignedCustomerRef, чтобы отслеживать изменения в данных в реальном времени.*/
         assignedCustomerRef.addValueEventListener(new ValueEventListener() {
 
             @Override
-/*Этот метод вызывается, когда данные в узле изменяются.*/
+            /*Этот метод вызывается, когда данные в узле изменяются.*/
             public void onDataChange(@NonNull DataSnapshot snapshot) {
 
                 /*Проверяем, существуют ли данные в узле.*/
                 if(snapshot.exists()){
 
-                        customerId = snapshot.getValue().toString();
+                    customerId = snapshot.getValue().toString();
 
-                        getAssignedCustomerPickupLocation();
+                    getAssignedCustomerPickupLocation();
+                }else{
+                    customerId = "";
+
+                    if(pickupMarker != null){
+                        pickupMarker.remove();
                     }
+                    if(assignedCustomerPickupLocationRefListener != null) {
+                        assignedCustomerPickupLocationRef.removeEventListener(assignedCustomerPickupLocationRefListener);
+                    }
+                }
             }
 
             @Override
@@ -109,15 +119,18 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
         });
     }
 
+    Marker pickupMarker;
+    private DatabaseReference assignedCustomerPickupLocationRef;
+    private ValueEventListener assignedCustomerPickupLocationRefListener;
     private void getAssignedCustomerPickupLocation(){//Получение местоположения клиента
-        DatabaseReference assignedCustomerPickupLocationRef = FirebaseDatabase.getInstance().getReference().child("driversWorking").child(customerId).child("l");
+        assignedCustomerPickupLocationRef = FirebaseDatabase.getInstance().getReference().child("customerRequest").child(customerId).child("l");
 
-        assignedCustomerPickupLocationRef.addValueEventListener(new ValueEventListener() {
+        assignedCustomerPickupLocationRefListener = assignedCustomerPickupLocationRef.addValueEventListener(new ValueEventListener() {
             @Override
 
             public void onDataChange(@NonNull DataSnapshot snapshot) {
 
-                if(snapshot.exists()){
+                if(snapshot.exists() && !customerId.equals("")){
                     List<Object> map = (List<Object>) snapshot.getValue();
                     double locationLng = 0;
                     double locationLat = 0;
@@ -126,14 +139,14 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
                         locationLat  = Double.parseDouble(map.get(0).toString());
                     }
 
-                    if(map.get(0) != null){
+                    if(map.get(1) != null){
                         locationLng  = Double.parseDouble(map.get(1).toString());
                     }
 
                     LatLng driverLatLng = new LatLng(locationLat, locationLng);
 
 
-                    mMap.addMarker(new MarkerOptions().position(driverLatLng).title("pickup location"));
+                    pickupMarker = mMap.addMarker(new MarkerOptions().position(driverLatLng).title("pickup location"));
                 }
 
             }
