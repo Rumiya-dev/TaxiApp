@@ -45,7 +45,7 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
     Location mLastLocation;
     LocationRequest mLocationRequest;
     private ActivityDriverMapBinding binding;
-    private Button mLogout, mRequest;
+    private Button mLogout, mRequest, mSettings;
     private LatLng pickupLocation;//объект который используется для работы широты и долготы пользователя напр. для устновки маркера в этом месте
     private Boolean requestBol = false;
     private Marker pickupMarker;
@@ -68,6 +68,7 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
 
         mLogout = (Button) findViewById(R.id.logout);
         mRequest = (Button) findViewById(R.id.request);
+        mSettings = (Button) findViewById(R.id.settings);
         mLogout.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -127,6 +128,14 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
                     getClosestDriver();
                 }
 
+            }
+        });
+        mSettings.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(CustomerMapActivity.this, CustomerSettingsActivity.class);
+                startActivity(intent);
+                return;
             }
         });
     }

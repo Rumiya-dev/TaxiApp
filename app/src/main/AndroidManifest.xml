@@ -14,7 +14,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.UberGoogle"
         tools:targetApi="31">
-
+        <activity
+            android:name=".CustomerSettingsActivity"
+            android:exported="false" />
         <!--
              TODO: Before you run your application, you need a Google Maps API key.
 
@@ -29,7 +31,6 @@
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyA39dRNnlpeJKIzijva6ShLEZI91E8N8P0" />
-
 
         <activity
             android:name=".CustomerMapActivity"
