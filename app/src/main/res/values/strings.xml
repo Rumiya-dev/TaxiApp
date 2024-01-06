@@ -3,4 +3,5 @@
     <string name="title_activity_driver_map">DriverMapActivity</string>
     <string name="title_activity_costumer_map">CostumerMapActivity</string>
     <string name="title_activity_maps">MapsActivity</string>
+    <string name="api_key">AIzaSyA39dRNnlpeJKIzijva6ShLEZI91E8N8P0</string>
 </resources>

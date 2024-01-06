@@ -18,6 +18,7 @@ import android.widget.ImageView;
 import com.bumptech.glide.Glide;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.libraries.places.api.Places;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -52,6 +53,10 @@ public class CustomerSettingsActivity extends AppCompatActivity {
     private String mProfileImageUrl;
 
     private Uri resultUri;
+
+
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

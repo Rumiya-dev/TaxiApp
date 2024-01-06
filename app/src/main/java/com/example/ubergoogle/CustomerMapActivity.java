@@ -1,5 +1,7 @@
 package com.example.ubergoogle;
 
+import static androidx.constraintlayout.helper.widget.MotionEffect.TAG;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
@@ -9,6 +11,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 
@@ -18,6 +21,7 @@ import com.firebase.geofire.GeoQuery;
 import com.firebase.geofire.GeoQueryEventListener;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.Status;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -28,6 +32,10 @@ import com.google.android.gms.maps.model.LatLng;
 import com.example.ubergoogle.databinding.ActivityDriverMapBinding;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.libraries.places.api.Places;
+import com.google.android.libraries.places.api.model.Place;
+import com.google.android.libraries.places.widget.AutocompleteSupportFragment;
+import com.google.android.libraries.places.widget.listener.PlaceSelectionListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -35,8 +43,10 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 
 public class CustomerMapActivity extends FragmentActivity implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, com.google.android.gms.location.LocationListener {
 
@@ -49,10 +59,17 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
     private LatLng pickupLocation;//объект который используется для работы широты и долготы пользователя напр. для устновки маркера в этом месте
     private Boolean requestBol = false;
     private Marker pickupMarker;
+    private String destination;
+
+
+
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
 
 
 
@@ -83,7 +100,7 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
         mRequest.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if(requestBol){//if customer cancel request to call taxi
+                if (requestBol) {//if customer cancel request to call taxi
 //                    DatabaseReference driverRef = FirebaseDatabase.getInstance().getReference().child("Users").child("Drivers").child(driverFoundID);
 //                    driverRef.setValue(true);//удаляет id водителя из firebase
 //                    driverFoundID = null;
@@ -93,25 +110,25 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
 //
 
 //
-                    if(driverFoundID != null){
+                    if (driverFoundID != null) {
                         DatabaseReference driverRef = FirebaseDatabase.getInstance().getReference().child("Users").child("Drivers").child(driverFoundID);
                         driverRef.setValue(true);//удаляет id водителя из firebase
                         driverFoundID = null;
                     }
-                        driverFound = false;
-                        radius = 1;
-                        String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+                    driverFound = false;
+                    radius = 1;
+                    String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
-                        DatabaseReference ref = FirebaseDatabase.getInstance().getReference("customerRequest");
-                        GeoFire geoFire = new GeoFire(ref);
-                        geoFire.removeLocation(userId);
+                    DatabaseReference ref = FirebaseDatabase.getInstance().getReference("customerRequest");
+                    GeoFire geoFire = new GeoFire(ref);
+                    geoFire.removeLocation(userId);
 
-                  if(pickupMarker != null){
-                      pickupMarker.remove();
-                  }
-                  mRequest.setText("call Uber");
+                    if (pickupMarker != null) {
+                        pickupMarker.remove();
+                    }
+                    mRequest.setText("call Uber");
 
-                }else {//if customer call taxi
+                } else {//if customer call taxi
                     requestBol = true;
 
                     String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
@@ -136,6 +153,39 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
                 Intent intent = new Intent(CustomerMapActivity.this, CustomerSettingsActivity.class);
                 startActivity(intent);
                 return;
+            }
+        });
+
+
+
+
+        // Initialize the AutocompleteSupportFragment.
+        AutocompleteSupportFragment autocompleteFragment = (AutocompleteSupportFragment)
+                getSupportFragmentManager().findFragmentById(R.id.autocomplete_fragment);
+
+        Places.initialize(getApplicationContext(), getString(R.string.api_key));
+
+        // Specify the types of place data to return.
+
+
+        autocompleteFragment.setPlaceFields(Arrays.asList(Place.Field.ID, Place.Field.NAME));
+
+
+        // Set up a PlaceSelectionListener to handle the response.
+        autocompleteFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
+            @Override
+            public void onPlaceSelected(@NonNull Place place) {
+                // TODO: Get info about the selected place.
+
+                Log.i(TAG, "Place: " + place.getName() + ", " + place.getId());
+
+                destination = place.getName().toString();
+            }
+            @Override
+            public void onError(@NonNull Status status) {
+                // TODO: Handle the error.
+
+                Log.i(TAG, "An error occurred: " + status);
             }
         });
     }
@@ -169,10 +219,11 @@ public class CustomerMapActivity extends FragmentActivity implements OnMapReadyC
                     driverFound = true;
                     driverFoundID = key;
 
-                    DatabaseReference driverRef = FirebaseDatabase.getInstance().getReference().child("Users").child("Drivers").child(driverFoundID);
+                    DatabaseReference driverRef = FirebaseDatabase.getInstance().getReference().child("Users").child("Drivers").child(driverFoundID).child("customerRequest");
                     String customerId = FirebaseAuth.getInstance().getCurrentUser().getUid();//Получает идентификатор текущего пользователя (клиента), который можно использовать для связи с id водителя
                     HashMap map = new HashMap();
                     map.put("customerRideId", customerId);
+                    map.put("destination", destination);
                     driverRef.updateChildren(map);//добавление в firebase в к id водителя id клиента папке Drivers
 
                     getDriverLocation();

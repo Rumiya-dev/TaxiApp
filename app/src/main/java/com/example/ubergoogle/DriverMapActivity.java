@@ -31,6 +31,7 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.example.ubergoogle.databinding.ActivityDriverMapBinding;
+import com.google.android.libraries.places.api.Places;
 import com.google.firebase.Firebase;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
@@ -54,12 +55,12 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
     private Boolean isLoggingOut = false;
     private LinearLayout mCustomerInfo;
     private ImageView mCustomerProfileImage;
-    private TextView mCustomerName, mCustomerPhone;
+    private TextView mCustomerName, mCustomerPhone, mCustomerDestination;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        Places.initialize(getApplicationContext(), "AIzaSyCOxd95Ihw2cb86xAIdcZzWcscMCbNQbyo");
 
 
         //binding = ActivityDriverMapBinding.inflate(getLayoutInflater());
@@ -78,6 +79,7 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
 
         mCustomerName = (TextView) findViewById(R.id.customerName);
         mCustomerPhone = (TextView) findViewById(R.id.customerPhone);
+        mCustomerDestination = (TextView) findViewById(R.id.customerDestination);
 
 
         mLogout = (Button) findViewById(R.id.logout);
@@ -106,7 +108,7 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
         String driverId = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
         /* Создаем ссылку на узел в базе данных Firebase, который содержит информацию о водителе. В данном случае, предполагается, что узел находится по пути "Users/Drivers/{driverId}".*/
-        DatabaseReference assignedCustomerRef = FirebaseDatabase.getInstance().getReference().child("Users").child("Drivers").child(driverId).child("customerRideId");
+        DatabaseReference assignedCustomerRef = FirebaseDatabase.getInstance().getReference().child("Users").child("Drivers").child(driverId).child("customerRequest").child("customerRideId");
 
         /* Добавляем слушатель значений к assignedCustomerRef, чтобы отслеживать изменения в данных в реальном времени.*/
         assignedCustomerRef.addValueEventListener(new ValueEventListener() {
@@ -121,6 +123,7 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
                     customerId = snapshot.getValue().toString();
 
                     getAssignedCustomerPickupLocation();
+                    getAssignedCustomerDestination();
 
                     getAssignedCustomerInfo();
                 }else{
@@ -135,6 +138,7 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
                     mCustomerInfo.setVisibility(View.GONE);
                     mCustomerName.setText("");
                     mCustomerPhone.setText("");
+                    mCustomerDestination.setText("Destination: --");
                     mCustomerProfileImage.setImageResource(R.mipmap.ic_launcher_round);
                 }
             }
@@ -183,6 +187,40 @@ public class DriverMapActivity extends FragmentActivity implements OnMapReadyCal
         });
 
     }
+
+
+    private void getAssignedCustomerDestination(){//Обнаружение назначенного клиента:
+
+        /*Получаем уникальный идентификатор текущего пользователя (водителя) из Firebase Authentication.*/
+        String driverId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+
+        /* Создаем ссылку на узел в базе данных Firebase, который содержит информацию о водителе. В данном случае, предполагается, что узел находится по пути "Users/Drivers/{driverId}".*/
+        DatabaseReference assignedCustomerRef = FirebaseDatabase.getInstance().getReference().child("Users").child("Drivers").child(driverId).child("customerRequest").child("destination");
+
+        /* Добавляем слушатель значений к assignedCustomerRef, чтобы отслеживать изменения в данных в реальном времени.*/
+        assignedCustomerRef.addListenerForSingleValueEvent(new ValueEventListener() {
+
+            @Override
+            /*Этот метод вызывается, когда данные в узле изменяются.*/
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+
+                /*Проверяем, существуют ли данные в узле.*/
+                if(snapshot.exists()){
+
+                    String destination = snapshot.getValue().toString();
+                    mCustomerDestination.setText("Destination: " + destination);
+
+                }else{//when the user call but don`t set destination
+                    mCustomerDestination.setText("Destination: --");
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+            }
+        });
+    }
+
 
     private void getAssignedCustomerInfo(){
         mCustomerInfo.setVisibility(View.VISIBLE);
